@@ -1,0 +1,1 @@
+gunicorn app:python3 -m bot
