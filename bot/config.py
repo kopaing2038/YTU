@@ -5,7 +5,7 @@ class Config:
 
     BOT_TOKEN = "7191544925:AAF1wNdb4SfdbzM6-691e0eNio4EmAqkRQ4"
 
-    SESSION_NAME = ":memory:"
+    SESSION_NAME = "yt_upload_v5_bot"
 
     API_ID = "21970746"
 
