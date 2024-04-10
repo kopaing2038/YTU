@@ -11,9 +11,9 @@ class Config:
 
     API_HASH = "32deb816dc3874e871b6158673fd3683"
 
-    CLIENT_ID = "298717439916-3bdg4p27rv8arckutho92u5ld10uctll.apps.googleusercontent.com"
+    CLIENT_ID = "298717439916-k4j5oj9tmhrkqf6r8u4m8s269hhu7p31.apps.googleusercontent.com"
 
-    CLIENT_SECRET = "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"
+    CLIENT_SECRET = "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"
 
     BOT_OWNER = "1113630298"
 
