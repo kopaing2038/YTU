@@ -12,11 +12,19 @@ from ..translations import Messages as tr
 from ..utubebot import UtubeBot
 
 
-def map_btns(pos):
+import json
+
+def load_credentials(file_path):
+    with open(file_path, 'r') as f:
+        credentials = json.load(f)
+    return credentials.get('CLIENT_ID'), credentials.get('CLIENT_SECRET')
+
+def map_btns(pos, credentials_file):
+    CLIENT_ID, CLIENT_SECRET = load_credentials(credentials_file)
     if pos == 1:
         button = [[InlineKeyboardButton(text="-->", callback_data="help+2")]]
     elif pos == len(tr.HELP_MSG) - 1:
-        auth = GoogleAuth(Config.CLIENT_ID, Config.CLIENT_SECRET)
+        auth = GoogleAuth(CLIENT_ID, CLIENT_SECRET)
         url = auth.GetAuthUrl()
         button = [
             [InlineKeyboardButton(text="<--", callback_data=f"help+{pos-1}")],
@@ -30,7 +38,6 @@ def map_btns(pos):
             ],
         ]
     return button
-
 
 @UtubeBot.on_message(
     Filters.private
