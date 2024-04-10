@@ -33,7 +33,7 @@ class Config:
         int(os.environ.get("VIDEO_CATEGORY")) if os.environ.get("VIDEO_CATEGORY") else 0
     )
 
-    VIDEO_TITLE_PREFIX = os.environ.get("VIDEO_TITLE_PREFIX", "")
+    VIDEO_TITLE_PREFIX = os.environ.get("VIDEO_TITLE_PREFIX", "hi")
 
     VIDEO_TITLE_SUFFIX = os.environ.get("VIDEO_TITLE_SUFFIX", "")
 
