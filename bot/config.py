@@ -3,9 +3,9 @@ import os
 
 class Config:
 
-    BOT_TOKEN = os.environ.get("BOT_TOKEN", "7191544925:AAF1wNdb4SfdbzM6-691e0eNio4EmAqkRQ4")
+    BOT_TOKEN = "7191544925:AAF1wNdb4SfdbzM6-691e0eNio4EmAqkRQ4"
 
-    SESSION_NAME = os.environ.get("SESSION_NAME", ":memory:")
+    SESSION_NAME = ":memory:"
 
     API_ID = "21970746"
 
@@ -15,7 +15,7 @@ class Config:
 
     CLIENT_SECRET = "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"
 
-    BOT_OWNER = int(os.environ.get("BOT_OWNER", "1113630298"))
+    BOT_OWNER = "1113630298"
 
     AUTH_USERS_TEXT = os.environ.get("AUTH_USERS", "")
 
