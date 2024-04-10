@@ -13,7 +13,7 @@ class Config:
 
     CLIENT_ID = "298717439916-cek7ibrb563mju3u0p5c068q4bp4d34k.apps.googleusercontent.com"
 
-    CLIENT_SECRET = "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"
+    CLIENT_SECRET = "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"
 
     BOT_OWNER = "1113630298"
 
