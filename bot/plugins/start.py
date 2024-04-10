@@ -10,6 +10,7 @@ from ..utubebot import UtubeBot
 class ChatAction:
     def __init__(self, action):
         self.action = action
+        self.name = action  # Assigning the action as the name
 
     def __str__(self):
         return self.action
