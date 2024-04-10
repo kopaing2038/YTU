@@ -6,7 +6,12 @@ from ..config import Config
 from ..utubebot import UtubeBot
 
 
-from pyrogram.types import ChatActionTyping
+
+from pyrogram.types import ChatAction
+
+class ChatActionTyping(ChatAction):
+    def __init__(self):
+        super().__init__("typing")
 
 @UtubeBot.on_message(
     Filters.private
