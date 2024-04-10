@@ -5,8 +5,8 @@ class Config:
 
     BOT_TOKEN = "7191544925:AAF1wNdb4SfdbzM6-691e0eNio4EmAqkRQ4"
 
-    SESSION_NAME = "TG2YT_KPBOT"
-
+    SESSION_NAME = os.environ.get('SESSION', 'Media_search')
+    
     API_ID = "21970746"
 
     API_HASH = "32deb816dc3874e871b6158673fd3683"
