@@ -6,6 +6,8 @@ from ..config import Config
 from ..utubebot import UtubeBot
 
 
+from pyrogram.types import ChatActions
+
 @UtubeBot.on_message(
     Filters.private
     & Filters.incoming
@@ -13,7 +15,7 @@ from ..utubebot import UtubeBot
     & Filters.user(Config.AUTH_USERS)
 )
 async def _start(c: UtubeBot, m: Message):
-    await m.reply_chat_action("typing")
+    await m.reply_chat_action(ChatActions.TYPING)
 
     await m.reply_text(
         text=tr.START_MSG.format(m.from_user.first_name),
