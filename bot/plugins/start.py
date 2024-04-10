@@ -14,7 +14,7 @@ from ..utubebot import UtubeBot
     & Filters.user(Config.AUTH_USERS)
 )
 async def _start(c: UtubeBot, m: Message):
-    await m.chat.send_chat_action("typing")
+    await c.send_chat_action(m.chat.id, "typing")
     await m.reply_text(
         text=tr.START_MSG.format(m.from_user.first_name),
         quote=True,
