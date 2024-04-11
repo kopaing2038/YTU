@@ -1,74 +1,83 @@
 
 
-from pyrogram import Client
+
+from pyrogram import Client, filters
 from pyrogram.types import Message
-from pyrogram.errors import FloodWait
-import os
-from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
+from googleapiclient.discovery import build
+import os
 
-# YouTube API credentials
 YOUTUBE_API_KEY = "AIzaSyDcyx29y2SL8Fr0Y6l_gOBMw0YHO9KV1nU"
 CHANNEL_ID = "UCy6J6n_IfRethp32skMk5rQ"
 
-# Pyrogram Client
-api_id = "21970746"
-api_hash = "32deb816dc3874e871b6158673fd3683"
-bot_token = "7191544925:AAF1wNdb4SfdbzM6-691e0eNio4EmAqkRQ4"
+# Define scopes for YouTube Data API
+SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
 
-app = Client("my_bot", api_id=api_id, api_hash=api_hash, bot_token=bot_token)
+# Pyrogram bot setup
+API_ID = "21970746"
+API_HASH = "32deb816dc3874e871b6158673fd3683"
+BOT_TOKEN = "7191544925:AAF1wNdb4SfdbzM6-691e0eNio4EmAqkRQ4"
 
-from pyrogram import Client
-from pyrogram.types import InputMediaVideo
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaFileUpload
+# Initialize Pyrogram client
+app = Client("my_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
 
-# Initialize YouTube API client
-youtube = build('youtube', 'v3', developerKey=YOUTUBE_API_KEY)
+def authenticate_youtube():
+    creds = None
+    # The file token.pickle stores the user's access and refresh tokens, and is
+    # created automatically when the authorization flow completes for the first
+    # time.
+    if os.path.exists('token.pickle'):
+        with open('token.pickle', 'rb') as token:
+            creds = pickle.load(token)
+    # If there are no (valid) credentials available, let the user log in.
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(
+                'credentials.json', SCOPES)
+            creds = flow.run_local_server(port=0)
+        # Save the credentials for the next run
+        with open('token.pickle', 'wb') as token:
+            pickle.dump(creds, token)
 
-# Function to upload video to YouTube
-def upload_video_to_youtube(file_path, title, description):
-    request_body = {
-        'snippet': {
-            'title': title,
-            'description': description,
-            'tags': None,
-            'categoryId': 22  # category ID for People & Blogs
+    return build('youtube', 'v3', credentials=creds)
+
+
+# Upload video to YouTube
+def upload_video_to_youtube(video_file):
+    youtube = authenticate_youtube()
+    request = youtube.videos().insert(
+        part="snippet,status",
+        body={
+            "snippet": {
+                "categoryId": "22",
+                "description": "Description of your video",
+                "title": "Title of your video"
+            },
+            "status": {
+                "privacyStatus": "private"  # You can change privacy status here
+            }
         },
-        'status': {
-            'privacyStatus': 'public'
-        }
-    }
-
-    # Upload video
-    media = MediaFileUpload(file_path)
-    response = youtube.videos().insert(
-        part='snippet,status',
-        body=request_body,
-        media_body=media
-    ).execute()
-
-    video_id = response.get('id')
+        media_body=MediaFileUpload(video_file)
+    )
+    response = request.execute()
+    video_id = response['id']
     return video_id
 
-# Function to send video message to Telegram
-async def send_video_message(chat_id, video_id):
-    await app.send_video(chat_id, video=video_id)
 
-# Define handler for messages
-@app.on_message()
-async def handle_message(client, message):
-    chat_id = message.chat.id
+# Command to upload video
+@app.on_message(filters.command("upload"))
+async def upload_video_command(client, message):
     if message.video:
-        video_title = message.caption if message.caption else "Untitled"
-        video_description = "This is a video uploaded via Telegram bot."
-        file_path = await message.download()
-        video_id = upload_video_to_youtube(file_path, video_title, video_description)
-        await send_video_message(chat_id, video_id)
-        os.remove(file_path)  # Remove the downloaded file after upload
+        video_file = await message.download()
+        video_id = upload_video_to_youtube(video_file)
+        await message.reply_text(f"Video uploaded successfully. Video ID: {video_id}")
+    else:
+        await message.reply_text("Please upload a video file to upload.")
 
-# Start the bot
+
+# Run the bot
 app.run()
-
