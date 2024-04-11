@@ -21,7 +21,7 @@ app = Client("my_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
 # Authenticate YouTube API
 flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRET_FILE, SCOPES)
-credentials = flow.run_local_server()
+credentials = flow.run_console()
 
 youtube = build(API_SERVICE_NAME, API_VERSION, credentials=credentials)
 
