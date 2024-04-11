@@ -36,6 +36,7 @@ async def handle_video(client, message):
     # Delete video file
     os.remove(video_path)
 
+# Function to handle unknown commands
 @Client.on_message(~filters.command & ~filters.video)
 async def unknown_command(client, message):
     await message.reply_text("Sorry, I didn't understand that command.")
