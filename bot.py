@@ -1,4 +1,3 @@
-
 import os
 from pyrogram import Client, filters
 from pytube import YouTube
@@ -22,7 +21,6 @@ async def start_command(client, message):
     await message.reply_text("Hello! Send me a video file and I will upload it to the YouTube channel.")
 
 
-# Function to handle video messages
 @app.on_message(filters.private) 
 async def handle_video(client, message):
     try:
@@ -31,8 +29,8 @@ async def handle_video(client, message):
             video_path = await message.download()
 
             # Initialize YouTube object to get video metadata
-            youtube = YouTube()
-            video = youtube.from_file(video_path)
+            youtube = YouTube(video_path)
+            video = youtube.streams.first()
 
             # Build YouTube service
             youtube_service = build('youtube', 'v3', developerKey=YOUTUBE_API_KEY)
