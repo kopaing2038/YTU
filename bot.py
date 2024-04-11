@@ -35,7 +35,7 @@ from googleapiclient.discovery import build
 
 API_SERVICE_NAME = 'youtube'
 API_VERSION = 'v3'
-CLIENT_SECRET_FILE = 'client_secret.json'  # Path to your client secret file
+CLIENT_SECRET_FILE = 'credentials.json'  # Path to your client secret file
 SCOPES = ['https://www.googleapis.com/auth/youtube.upload']
 
 API_ID = "21970746"
