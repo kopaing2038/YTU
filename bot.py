@@ -3,7 +3,11 @@ import os
 from pytube import YouTube
 from pyrogram import Client, filters
 
-
+import os
+import google_auth_oauthlib.flow
+import googleapiclient.discovery
+import googleapiclient.errors
+from pyrogram import Client, filters
 
 
 YOUTUBE_API_KEY = 'AIzaSyAqY869WGpWfSBKGdvLJWlbd8YkreNym30'
@@ -22,6 +26,7 @@ async def start_command(client, message):
     await message.reply_text("Hello! Send me a video file and I will upload it to the YouTube channel.")
 
 
+# Function to handle video messages
 @app.on_message(filters.private) 
 async def handle_video(client, message):
     try:
@@ -30,9 +35,8 @@ async def handle_video(client, message):
             video_path = await message.download()
 
             # Upload video to YouTube
-            youtube = YouTube(url=video_path)
-            youtube.upload(title="Uploaded from Telegram Bot", description="Video uploaded by Telegram Bot", 
-                           privacy="public", tags=["telegram", "bot"])
+            youtube = await get_authenticated_service()
+            upload_video(youtube, video_path)
 
             # Send confirmation message
             await message.reply_text("Video uploaded to YouTube successfully!")
@@ -44,6 +48,34 @@ async def handle_video(client, message):
     except Exception as e:
         # If an error occurs, inform the user
         await message.reply_text(f"An error occurred: {str(e)}")
+
+# Function to authenticate and get the YouTube service
+async def get_authenticated_service():
+    scopes = ["https://www.googleapis.com/auth/youtube.upload"]
+    flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
+        "client_secrets.json", scopes)
+    credentials = flow.run_console()
+    return googleapiclient.discovery.build("youtube", "v3", credentials=credentials)
+
+# Function to upload video to YouTube
+def upload_video(youtube, file):
+    request = youtube.videos().insert(
+        part="snippet,status",
+        body={
+          "snippet": {
+            "categoryId": "22",
+            "description": "Video uploaded by Telegram Bot",
+            "title": "Uploaded from Telegram Bot"
+          },
+          "status": {
+            "privacyStatus": "public"
+          }
+        },
+        media_body=file
+    )
+    response = request.execute()
+    print(response)
+
 
 # Run the bot
 app.run()
