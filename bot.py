@@ -12,77 +12,65 @@ YOUTUBE_API_KEY = 'AIzaSyAqY869WGpWfSBKGdvLJWlbd8YkreNym30'
 YOUTUBE_CHANNEL_ID = 'UCy6J6n_IfRethp32skMk5rQ'
 
 
-API_ID = '21970746'
-API_HASH = '32deb816dc3874e871b6158673fd3683'
-BOT_TOKEN = '7191544925:AAF1wNdb4SfdbzM6-691e0eNio4EmAqkRQ4'
+from pyrogram import Client, filters
+from pyrogram.types import Message
+import os
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
 
+# Telegram API credentials
+api_id = "21970746"
+api_hash = "32deb816dc3874e871b6158673fd3683"
+bot_token = "7191544925:AAF1wNdb4SfdbzM6-691e0eNio4EmAqkRQ4"
 
-app = Client("my_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
+# Google API credentials
+credentials = service_account.Credentials.from_service_account_file('credentials.json')
+youtube = build('youtube', 'v3', credentials=credentials)
 
+# Initialize the Pyrogram Client
+app = Client("my_bot", api_id=api_id, api_hash=api_hash, bot_token=bot_token)
 
-# Function to handle the /start command
-@app.on_message(filters.command("start") & filters.private) 
-async def start_command(client, message):
-    await message.reply_text("Hello! Send me a video file and I will upload it to the YouTube channel.")
+# Handler for the "/upload" command
+@app.on_message(filters.command("upload", prefixes="/") & filters.private)
+async def upload_video_to_youtube(client, message: Message):
+    # Check if there is a video attached
+    if not message.video:
+        await message.reply("Please attach a video to upload.")
+        return
+    
+    # Download the video file
+    video_path = await message.download()
+    
+    # Extract video title
+    video_title = message.caption or "Untitled Video"
+    
+    # Upload video to YouTube
+    request_body = {
+        'snippet': {
+            'title': video_title,
+            'description': 'Uploaded from Telegram bot',
+        },
+        'status': {
+            'privacyStatus': 'public'
+        }
+    }
 
+    insert_request = youtube.videos().insert(
+        part=",".join(request_body.keys()),
+        body=request_body,
+        media_body=video_path
+    )
 
-# Function to handle video messages
-@app.on_message(filters.private) 
-async def handle_video(client, message):
-    try:
-        if message.video:
-            # Get video file
-            video_path = await message.download()
+    response = insert_request.execute()
 
-            # Initialize YouTube object to get video metadata
-            youtube = YouTube(video_path)
-            video = youtube.streams.first()
+    # Get the uploaded video URL
+    video_url = f"https://www.youtube.com/watch?v={response['id']}"
+    
+    # Reply with the uploaded video URL
+    await message.reply(f"Video uploaded successfully: {video_url}")
 
-            # Build YouTube service
-            youtube_service = build('youtube', 'v3', developerKey=YOUTUBE_API_KEY)
+    # Cleanup - delete the downloaded video file
+    os.remove(video_path)
 
-            # Prepare video metadata
-            request_body = {
-                'snippet': {
-                    'title': 'Uploaded from Telegram Bot',
-                    'description': 'Video uploaded by Telegram Bot',
-                    'tags': ['telegram', 'bot'],
-                    'categoryId': 22  # Category ID for People & Blogs
-                },
-                'status': {
-                    'privacyStatus': 'public'
-                }
-            }
-
-            # Upload video to YouTube with rate limiting
-            while True:
-                try:
-                    media_file = MediaFileUpload(video_path)
-                    response = youtube_service.videos().insert(
-                        part='snippet,status',
-                        body=request_body,
-                        media_body=media_file
-                    ).execute()
-                    break
-                except Exception as e:
-                    if '429' in str(e):
-                        # If rate limit exceeded, wait for some time and retry
-                        delay = random.randint(10, 30)  # Random delay between 10 and 30 seconds
-                        await message.reply_text(f"Rate limit exceeded. Retrying after {delay} seconds...")
-                        time.sleep(delay)
-                    else:
-                        raise
-
-            # Send confirmation message
-            await message.reply_text("Video uploaded to YouTube successfully!")
-
-            # Delete video file
-            os.remove(video_path)
-        else:
-            await message.reply_text("Please send a video file.")
-    except Exception as e:
-        # If an error occurs, inform the user
-        await message.reply_text(f"An error occurred: {str(e)}")
-
-# Run the bot
+# Start the bot
 app.run()
