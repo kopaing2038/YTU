@@ -36,7 +36,9 @@ async def handle_video(client, message):
     # Delete video file
     os.remove(video_path)
 
-
+@Client.on_message(~filters.command & ~filters.video)
+async def unknown_command(client, message):
+    await message.reply_text("Sorry, I didn't understand that command.")
 
 # Initialize the Pyrogram client
 app = Client("my_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
