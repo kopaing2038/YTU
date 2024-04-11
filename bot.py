@@ -1,13 +1,9 @@
 
 import os
+from pyrogram import Client, filters
 from pytube import YouTube
-from pyrogram import Client, filters
-
-import os
-import google_auth_oauthlib.flow
-import googleapiclient.discovery
-import googleapiclient.errors
-from pyrogram import Client, filters
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaFileUpload
 
 
 YOUTUBE_API_KEY = 'AIzaSyAqY869WGpWfSBKGdvLJWlbd8YkreNym30'
@@ -34,9 +30,33 @@ async def handle_video(client, message):
             # Get video file
             video_path = await message.download()
 
+            # Initialize YouTube object to get video metadata
+            youtube = YouTube()
+            video = youtube.from_file(video_path)
+
+            # Build YouTube service
+            youtube_service = build('youtube', 'v3', developerKey=YOUTUBE_API_KEY)
+
+            # Prepare video metadata
+            request_body = {
+                'snippet': {
+                    'title': 'Uploaded from Telegram Bot',
+                    'description': 'Video uploaded by Telegram Bot',
+                    'tags': ['telegram', 'bot'],
+                    'categoryId': 22  # Category ID for People & Blogs
+                },
+                'status': {
+                    'privacyStatus': 'public'
+                }
+            }
+
             # Upload video to YouTube
-            youtube = await get_authenticated_service()
-            upload_video(youtube, video_path)
+            media_file = MediaFileUpload(video_path)
+            response = youtube_service.videos().insert(
+                part='snippet,status',
+                body=request_body,
+                media_body=media_file
+            ).execute()
 
             # Send confirmation message
             await message.reply_text("Video uploaded to YouTube successfully!")
@@ -48,34 +68,6 @@ async def handle_video(client, message):
     except Exception as e:
         # If an error occurs, inform the user
         await message.reply_text(f"An error occurred: {str(e)}")
-
-# Function to authenticate and get the YouTube service
-async def get_authenticated_service():
-    scopes = ["https://www.googleapis.com/auth/youtube.upload"]
-    flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
-        "client_secrets.json", scopes)
-    credentials = flow.run_console()
-    return googleapiclient.discovery.build("youtube", "v3", credentials=credentials)
-
-# Function to upload video to YouTube
-def upload_video(youtube, file):
-    request = youtube.videos().insert(
-        part="snippet,status",
-        body={
-          "snippet": {
-            "categoryId": "22",
-            "description": "Video uploaded by Telegram Bot",
-            "title": "Uploaded from Telegram Bot"
-          },
-          "status": {
-            "privacyStatus": "public"
-          }
-        },
-        media_body=file
-    )
-    response = request.execute()
-    print(response)
-
 
 # Run the bot
 app.run()
