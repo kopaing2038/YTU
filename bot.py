@@ -22,7 +22,6 @@ async def start_command(client, message):
     await message.reply_text("Hello! Send me a video file and I will upload it to the YouTube channel.")
 
 
-# Function to handle video messages
 @app.on_message(filters.private) 
 async def handle_video(client, message):
     try:
@@ -31,8 +30,7 @@ async def handle_video(client, message):
             video_path = await message.download()
 
             # Upload video to YouTube
-            youtube = YouTube()
-            youtube.from_file(video_path)
+            youtube = YouTube(url=video_path)
             youtube.upload(title="Uploaded from Telegram Bot", description="Video uploaded by Telegram Bot", 
                            privacy="public", tags=["telegram", "bot"])
 
