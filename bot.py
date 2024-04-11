@@ -1,8 +1,11 @@
 import os
+import time
+import random
 from pyrogram import Client, filters
 from pytube import YouTube
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
+
 
 
 YOUTUBE_API_KEY = 'AIzaSyAqY869WGpWfSBKGdvLJWlbd8YkreNym30'
@@ -16,12 +19,12 @@ BOT_TOKEN = '7191544925:AAF1wNdb4SfdbzM6-691e0eNio4EmAqkRQ4'
 
 app = Client("my_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
+
+# Function to handle the /start command
 @app.on_message(filters.command("start") & filters.private) 
 async def start_command(client, message):
     await message.reply_text("Hello! Send me a video file and I will upload it to the YouTube channel.")
 
-
-import time
 
 # Function to handle video messages
 @app.on_message(filters.private) 
@@ -51,38 +54,30 @@ async def handle_video(client, message):
                 }
             }
 
-            # Retry uploading with exponential backoff
-            max_retries = 5
-            retry_count = 0
-            while retry_count < max_retries:
+            # Upload video to YouTube with rate limiting
+            while True:
                 try:
-                    # Upload video to YouTube
                     media_file = MediaFileUpload(video_path)
                     response = youtube_service.videos().insert(
                         part='snippet,status',
                         body=request_body,
                         media_body=media_file
                     ).execute()
-
-                    # Send confirmation message
-                    await message.reply_text("Video uploaded to YouTube successfully!")
-
-                    # Delete video file
-                    os.remove(video_path)
-
-                    # Exit retry loop if successful
                     break
-                except HttpError as e:
-                    if e.resp.status == 429:  # Too Many Requests
-                        # Apply exponential backoff
-                        retry_count += 1
-                        delay = (2 ** retry_count) * 0.5  # Backoff time doubles with each retry
-                        print(f"Too Many Requests. Retrying after {delay} seconds.")
+                except Exception as e:
+                    if '429' in str(e):
+                        # If rate limit exceeded, wait for some time and retry
+                        delay = random.randint(10, 30)  # Random delay between 10 and 30 seconds
+                        await message.reply_text(f"Rate limit exceeded. Retrying after {delay} seconds...")
                         time.sleep(delay)
                     else:
-                        raise  # Re-raise other HTTP errors
-            else:
-                await message.reply_text("Failed to upload video: Maximum retry attempts reached.")
+                        raise
+
+            # Send confirmation message
+            await message.reply_text("Video uploaded to YouTube successfully!")
+
+            # Delete video file
+            os.remove(video_path)
         else:
             await message.reply_text("Please send a video file.")
     except Exception as e:
