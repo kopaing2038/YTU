@@ -1,62 +1,87 @@
-from pyrogram import Client, filters
+
+
+from pyrogram import Client
 from pyrogram.types import Message
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
+from pyrogram.errors import FloodWait
 import os
+from googleapiclient.discovery import build
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
 
-# Define your YouTube API credentials
-API_SERVICE_NAME = 'youtube'
-API_VERSION = 'v3'
-CLIENT_SECRET_FILE = 'client_secret.json'  # Path to your client secret file
-SCOPES = ['https://www.googleapis.com/auth/youtube.upload']
+# YouTube API credentials
+YOUTUBE_API_KEY = "AIzaSyDcyx29y2SL8Fr0Y6l_gOBMw0YHO9KV1nU"
+CHANNEL_ID = "UCy6J6n_IfRethp32skMk5rQ"
 
-# Define your Telegram bot token and YouTube channel ID
-API_ID = "21970746"
-API_HASH = "32deb816dc3874e871b6158673fd3683"
-BOT_TOKEN = "7191544925:AAF1wNdb4SfdbzM6-691e0eNio4EmAqkRQ4"
-CHANNEL_ID = 'UCy6J6n_IfRethp32skMk5rQ'  # Your YouTube channel ID
+# Pyrogram Client
+api_id = "21970746"
+api_hash = "32deb816dc3874e871b6158673fd3683"
+bot_token = "7191544925:AAF1wNdb4SfdbzM6-691e0eNio4EmAqkRQ4"
 
-# Initialize Pyrogram client
-app = Client("my_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
+app = Client("my_bot", api_id=api_id, api_hash=api_hash, bot_token=bot_token)
 
-# Authenticate YouTube API
-flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRET_FILE, SCOPES)
-credentials = flow.run_console()
+# Authenticate and create YouTube service
+def get_authenticated_service():
+    creds = None
+    SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
+    if os.path.exists('token.pickle'):
+        with open('token.pickle', 'rb') as token:
+            creds = pickle.load(token)
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(
+                'credentials.json', SCOPES)
+            creds = flow.run_local_server(port=0)
+        with open('token.pickle', 'wb') as token:
+            pickle.dump(creds, token)
+    return build('youtube', 'v3', credentials=creds)
 
-youtube = build(API_SERVICE_NAME, API_VERSION, credentials=credentials)
-
-# Define command to handle uploading video
-@app.on_message(filters.command("upload_video") & filters.private)
-async def upload_video_to_youtube(client, message: Message):
-    # Check if the message contains a video
-    if message.video:
-        # Download the video
-        video_path = await message.download()
-        
-        # Get video title
-        video_title = message.caption if message.caption else "Untitled"
-        
-        # Upload the video to YouTube
+def upload_video_to_youtube(file_path, title, description):
+    youtube = get_authenticated_service()
+    request_body = {
+        'snippet': {
+            'title': title,
+            'description': description,
+            'tags': None,
+            'categoryId': 22
+        },
+        'status': {
+            'privacyStatus': 'public'
+        }
+    }
+    media = MediaFileUpload(file_path)
+    response_upload = youtube.videos().insert(
+        part='snippet,status',
+        body=request_body,
+        media_body=media
+    ).execute()
+    video_id = response_upload.get('id')
+    if video_id:
         request_body = {
             'snippet': {
-                'title': video_title,
-                'description': 'Uploaded using Telegram bot.'
-            },
-            'status': {
-                'privacyStatus': 'public'
+                'resourceId': {
+                    'kind': 'youtube#video',
+                    'videoId': video_id
+                },
+                'position': 0
             }
         }
-        media_file = MediaFileUpload(video_path)
-        youtube.videos().insert(
-            part='snippet,status',
-            body=request_body,
-            media_body=media_file
+        response_playlist = youtube.playlistItems().insert(
+            part='snippet',
+            body=request_body
         ).execute()
-        
-        await message.reply_text("Video uploaded to YouTube successfully!")
-        
-    else:
-        await message.reply_text("Please send a video file to upload.")
+
+@app.on_message()
+def upload_video(bot, message: Message):
+    file_id = message.video.file_id
+    file_path = bot.download_media(file_id)
+    title = "Your video title"
+    description = "Your video description"
+    try:
+        upload_video_to_youtube(file_path, title, description)
+        message.reply_text("Video uploaded successfully to YouTube!")
+    except Exception as e:
+        message.reply_text(f"Error uploading video: {str(e)}")
 
 app.run()
