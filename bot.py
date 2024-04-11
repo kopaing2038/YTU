@@ -19,69 +19,56 @@ bot_token = "7191544925:AAF1wNdb4SfdbzM6-691e0eNio4EmAqkRQ4"
 
 app = Client("my_bot", api_id=api_id, api_hash=api_hash, bot_token=bot_token)
 
-# Authenticate and create YouTube service
-def get_authenticated_service():
-    creds = None
-    SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
-    if os.path.exists('token.pickle'):
-        with open('token.pickle', 'rb') as token:
-            creds = pickle.load(token)
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                'credentials.json', SCOPES)
-            creds = flow.run_local_server(port=0)
-        with open('token.pickle', 'wb') as token:
-            pickle.dump(creds, token)
-    return build('youtube', 'v3', credentials=creds)
+from pyrogram import Client
+from pyrogram.types import InputMediaVideo
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaFileUpload
 
+
+# Initialize YouTube API client
+youtube = build('youtube', 'v3', developerKey=YOUTUBE_API_KEY)
+
+# Function to upload video to YouTube
 def upload_video_to_youtube(file_path, title, description):
-    youtube = get_authenticated_service()
     request_body = {
         'snippet': {
             'title': title,
             'description': description,
             'tags': None,
-            'categoryId': 22
+            'categoryId': 22  # category ID for People & Blogs
         },
         'status': {
             'privacyStatus': 'public'
         }
     }
+
+    # Upload video
     media = MediaFileUpload(file_path)
-    response_upload = youtube.videos().insert(
+    response = youtube.videos().insert(
         part='snippet,status',
         body=request_body,
         media_body=media
     ).execute()
-    video_id = response_upload.get('id')
-    if video_id:
-        request_body = {
-            'snippet': {
-                'resourceId': {
-                    'kind': 'youtube#video',
-                    'videoId': video_id
-                },
-                'position': 0
-            }
-        }
-        response_playlist = youtube.playlistItems().insert(
-            part='snippet',
-            body=request_body
-        ).execute()
 
+    video_id = response.get('id')
+    return video_id
+
+# Function to send video message to Telegram
+async def send_video_message(chat_id, video_id):
+    await app.send_video(chat_id, video=video_id)
+
+# Define handler for messages
 @app.on_message()
-def upload_video(bot, message: Message):
-    file_id = message.video.file_id
-    file_path = bot.download_media(file_id)
-    title = "Your video title"
-    description = "Your video description"
-    try:
-        upload_video_to_youtube(file_path, title, description)
-        message.reply_text("Video uploaded successfully to YouTube!")
-    except Exception as e:
-        message.reply_text(f"Error uploading video: {str(e)}")
+async def handle_message(client, message):
+    chat_id = message.chat.id
+    if message.video:
+        video_title = message.caption if message.caption else "Untitled"
+        video_description = "This is a video uploaded via Telegram bot."
+        file_path = await message.download()
+        video_id = upload_video_to_youtube(file_path, video_title, video_description)
+        await send_video_message(chat_id, video_id)
+        os.remove(file_path)  # Remove the downloaded file after upload
 
+# Start the bot
 app.run()
+
