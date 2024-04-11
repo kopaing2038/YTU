@@ -22,22 +22,27 @@ app = Client("my_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 async def start_command(client, message):
     await message.reply_text("Hello! Send me a video file and I will upload it to the YouTube channel.")
 
+
 # Function to handle video messages
 @app.on_message(filters.command("upload") & filters.video & filters.private) 
 async def handle_video(client, message):
-    # Get video file
-    video_path = await message.download()
+    try:
+        # Get video file
+        video_path = await message.download()
 
-    # Upload video to YouTube
-    youtube = YouTube(video_path)
-    youtube.upload(title="Uploaded from Telegram Bot", description="Video uploaded by Telegram Bot", 
-                   privacy="public", tags=["telegram", "bot"])
+        # Upload video to YouTube
+        youtube = YouTube(video_path)
+        youtube.upload(title="Uploaded from Telegram Bot", description="Video uploaded by Telegram Bot", 
+                       privacy="public", tags=["telegram", "bot"])
 
-    # Send confirmation message
-    await message.reply_text("Video uploaded to YouTube successfully!")
+        # Send confirmation message
+        await message.reply_text("Video uploaded to YouTube successfully!")
 
-    # Delete video file
-    os.remove(video_path)
+        # Delete video file
+        os.remove(video_path)
+    except Exception as e:
+        # If an error occurs, inform the user
+        await message.reply_text(f"An error occurred: {str(e)}")
 
 # Run the bot
 app.run()
