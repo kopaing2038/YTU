@@ -3,7 +3,6 @@ from pyrogram.types import Message
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
-import socket
 
 # Define your YouTube API credentials
 API_SERVICE_NAME = 'youtube'
@@ -22,23 +21,9 @@ app = Client("my_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
 # Authenticate YouTube API
 flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRET_FILE, SCOPES)
-flow.redirect_uri = 'http://localhost:{}/'.format(8080)
-authorization_url, _ = flow.authorization_url(access_type='offline')
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-sock.bind(('localhost', 8080))
-sock.listen(1)
+credentials = flow.run_local_server(port=0)
 
-# Open a browser to the authorization URL
-print("Please go to this URL and authorize access: {}".format(authorization_url))
-
-# Wait for the authorization response
-connection, client_address = sock.accept()
-data = connection.recv(1024)
-connection.close()
-sock.close()
-flow.fetch_token(code=data.decode('utf-8'))
-
-youtube = build(API_SERVICE_NAME, API_VERSION, credentials=flow.credentials)
+youtube = build(API_SERVICE_NAME, API_VERSION, credentials=credentials)
 
 # Define command to handle uploading video
 @app.on_message(filters.command("upload_video") & filters.private)
