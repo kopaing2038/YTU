@@ -15,12 +15,15 @@ API_HASH = '32deb816dc3874e871b6158673fd3683'
 BOT_TOKEN = '7191544925:AAF1wNdb4SfdbzM6-691e0eNio4EmAqkRQ4'
 
 
-@Client.on_message(filters.command("start"))
+app = Client("my_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
+
+# Function to handle the /start command
+@app.on_message(filters.command("start") & filters.private) 
 async def start_command(client, message):
     await message.reply_text("Hello! Send me a video file and I will upload it to the YouTube channel.")
 
 # Function to handle video messages
-@Client.on_message(filters.video)
+@app.on_message(filters.command("upload") & filters.video & filters.private) 
 async def handle_video(client, message):
     # Get video file
     video_path = await message.download()
@@ -35,14 +38,6 @@ async def handle_video(client, message):
 
     # Delete video file
     os.remove(video_path)
-
-# Function to handle unknown commands
-@Client.on_message(~filters.command & ~filters.video)
-async def unknown_command(client, message):
-    await message.reply_text("Sorry, I didn't understand that command.")
-
-# Initialize the Pyrogram client
-app = Client("my_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
 # Run the bot
 app.run()
