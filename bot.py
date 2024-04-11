@@ -3,6 +3,7 @@ from pyrogram.types import Message
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
+import os
 
 # Define your YouTube API credentials
 API_SERVICE_NAME = 'youtube'
@@ -21,7 +22,7 @@ app = Client("my_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
 # Authenticate YouTube API
 flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRET_FILE, SCOPES)
-credentials = flow.run_local_server(port=0)
+credentials = flow.run_console()
 
 youtube = build(API_SERVICE_NAME, API_VERSION, credentials=credentials)
 
